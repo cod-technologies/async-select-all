@@ -62,10 +62,16 @@ pub struct SelectAll<F: Future> {
     futures: Vec<F>,
 }
 
-impl<F: Future> From<Vec<F>> for SelectAll<F> {
+impl<I> From<I> for SelectAll<I::Item>
+where
+    I: IntoIterator,
+    I::Item: Future,
+{
     #[inline]
-    fn from(futures: Vec<F>) -> Self {
-        Self { futures }
+    fn from(iter: I) -> Self {
+        Self {
+            futures: iter.into_iter().collect(),
+        }
     }
 }
 
@@ -90,7 +96,7 @@ impl<F: Future> SelectAll<F> {
     /// Returns true if the set contains no futures.
     #[inline]
     pub fn is_empty(&self) -> bool {
-        !self.futures.is_empty()
+        self.futures.is_empty()
     }
 
     /// Push a future into the set.
@@ -115,5 +121,31 @@ impl<F: Future> SelectAll<F> {
     pub async fn select(&mut self) -> F::Output {
         assert!(!self.futures.is_empty());
         SelectFuture::new(&mut self.futures).await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use futures::executor::block_on;
+
+    async fn inc(i: i32) -> i32 {
+        i + 1
+    }
+
+    #[test]
+    fn select_all() {
+        let futures = vec![inc(10), inc(5)];
+        let mut select_all = SelectAll::from(futures);
+        let vec = block_on(async {
+            let mut vec = Vec::with_capacity(select_all.len());
+            while !select_all.is_empty() {
+                let val = select_all.select().await;
+                vec.push(val)
+            }
+            vec.sort();
+            vec
+        });
+        assert_eq!(vec, vec![6, 11]);
     }
 }
