@@ -13,6 +13,32 @@
 // limitations under the License.
 
 //! Select over a list of futures.
+//!
+//! ## Usage
+//!
+//! ```
+//! use async_select_all::SelectAll;
+//! use futures::executor::block_on;
+//!
+//! async fn inc(i: i32) -> i32 {
+//!     i + 1
+//! }
+//!
+//! fn main() {
+//!     let futures = vec![inc(10), inc(5)];
+//!     let mut select_all = SelectAll::from(futures);
+//!     let vec = block_on(async {
+//!         let mut vec = Vec::with_capacity(select_all.len());
+//!         while !select_all.is_empty() {
+//!             let val = select_all.select().await;
+//!             vec.push(val)
+//!         }
+//!         vec.sort();
+//!         vec
+//!     });
+//!     assert_eq!(vec, vec![6, 11]);
+//! }
+//! ```
 
 use pin_project_lite::pin_project;
 use std::future::Future;
@@ -121,31 +147,5 @@ impl<F: Future> SelectAll<F> {
     pub async fn select(&mut self) -> F::Output {
         assert!(!self.futures.is_empty());
         SelectFuture::new(&mut self.futures).await
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use futures::executor::block_on;
-
-    async fn inc(i: i32) -> i32 {
-        i + 1
-    }
-
-    #[test]
-    fn select_all() {
-        let futures = vec![inc(10), inc(5)];
-        let mut select_all = SelectAll::from(futures);
-        let vec = block_on(async {
-            let mut vec = Vec::with_capacity(select_all.len());
-            while !select_all.is_empty() {
-                let val = select_all.select().await;
-                vec.push(val)
-            }
-            vec.sort();
-            vec
-        });
-        assert_eq!(vec, vec![6, 11]);
     }
 }
