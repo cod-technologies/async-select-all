@@ -1,0 +1,15 @@
+[package]
+name = "async-select-all"
+version = "0.1.0"
+authors = ["David Li <davidli2010@foxmail.com>"]
+edition = "2018"
+readme = "README.md"
+license = "Apache-2.0"
+description = "A futures library adapter for selecting over a list of futures."
+keywords = ["async", "future", "select", "all"]
+repository = "https://github.com/cod-technologies/async-select-all.git"
+homepage = "https://github.com/cod-technologies/async-select-all"
+documentation = "https://docs.rs/async-select-all/"
+
+[dependencies]
+pin-project-lite = "0.2.0"
